@@ -25,9 +25,10 @@ import ApexChart from "react-apexcharts";
 const Chart = () => {
   const [chartdata,setChartdata]=useState([])
   const [loading, setLoading] = useState(true);
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
   const getChartdata=async()=>{
     const json=await(
-      await  fetch("http://127.0.0.1:8000/nasdaq_chart")
+      await  fetch(`${API_URL}/nasdaq_chart`)
     ).json();
     setChartdata(json);
     setLoading(false);
@@ -48,11 +49,12 @@ const Chart = () => {
         series={[
           {
             data: chartdata.map((item) => {
+              // ApexChart 캔들스틱 순서: [날짜, 시가, 고가, 저가, 종가]
               return [
                 item.date,
+                Number(item.stock_market_price.split(',').join('')),
                 Number(item.stock_high_price.split(',').join('')),
                 Number(item.stock_low_price.split(',').join('')),
-                Number(item.stock_market_price.split(',').join('')),
                 Number(item.stock_closing_price.split(',').join('')),
               ];
             }),

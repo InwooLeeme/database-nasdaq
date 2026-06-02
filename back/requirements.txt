@@ -1,0 +1,7 @@
+# 로컬 개발/스크립트 실행용 전체 의존성.
+# (Vercel 배포는 저장소 루트의 requirements.txt 를 사용 — API 구동에 fastapi 만 필요)
+fastapi
+uvicorn[standard]
+pandas
+numpy
+matplotlib

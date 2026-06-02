@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment (.env.example 는 추적함)
+.env
+.env.local
+.env.*.local
+
+# Node / Frontend
+node_modules/
+front/build/
+
+# Vercel
+.vercel/
+
+# OS
+.DS_Store
+Thumbs.db

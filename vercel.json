@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd front && npm install && npm run build",
+  "outputDirectory": "front/build",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "back/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" }
+  ]
+}

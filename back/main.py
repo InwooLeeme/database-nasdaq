@@ -1,77 +1,60 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import os
 import sqlite3
+
+from db import get_connection
 
 app = FastAPI()
 
 # CORS 설정
+# 환경변수 FRONTEND_ORIGINS(쉼표 구분)로 허용 도메인 지정. 기본값은 로컬 개발 주소.
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # 클라이언트의 주소
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
+# stocks 테이블의 실제 물리적 컬럼 순서 (database.py 적재 결과 기준).
+# 시가(market)/고가(high)/저가(low) 순서가 정확히 매핑되도록 한다.
+STOCKS_COLUMNS = [
+    "date",
+    "stock_closing_price",
+    "stock_market_price",
+    "stock_high_price",
+    "stock_low_price",
+    "volume",
+    "change",
+]
 
-# SQLite 데이터베이스 연결 함수
-def connect_db():
-    return sqlite3.connect("chart.db")
 
-
-# API 엔드포인트 작성
-@app.get("/nasdaq_chart")
-async def get_nasdaq_chart():
+def fetch_all(sql):
+    """주어진 SELECT 문을 실행해 모든 행을 반환한다. 결과가 비어 있으면 404."""
     try:
-        conn = connect_db()
-        c = conn.cursor()
-        c.execute("SELECT * FROM stocks ORDER BY date DESC")
-        rows = c.fetchall()
-
-        if not rows:
-            raise HTTPException(status_code=404, detail="Chart data not found")
-
-        # 컬럼명 정의
-        column_names = [
-            "date",
-            "stock_closing_price",
-            "stock_high_price",
-            "stock_low_price",
-            "stock_market_price",
-            "volume",
-            "change",
-        ]
-
-        # 데이터를 JSON 형식으로 변환
-        chart_data = []
-        for row in rows:
-            chart_data.append({column_names[i]: row[i] for i in range(len(row))})
-
-        return chart_data
+        with get_connection() as conn:
+            rows = conn.execute(sql).fetchall()
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        conn.close()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="Chart data not found")
+    return rows
+
+
+@app.get("/nasdaq_chart")
+async def get_nasdaq_chart():
+    rows = fetch_all("SELECT * FROM stocks ORDER BY date DESC")
+    return [dict(zip(STOCKS_COLUMNS, row)) for row in rows]
 
 
 @app.get("/cosine_similarity")
 async def get_cosine_similarity():
-    try:
-        conn = connect_db()
-        c = conn.cursor()
-        c.execute("SELECT * FROM cosine ORDER BY similarity DESC")
-        rows = c.fetchall()
-
-        if not rows:
-            raise HTTPException(status_code=404, detail="Chart data not found")
-
-        # 데이터를 JSON 형식으로 변환
-        chart_data = []
-        for row in rows:
-            chart_data.append({"idx": row[0], "similarity": row[1]})
-
-        return chart_data
-    except sqlite3.Error as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    finally:
-        conn.close()
+    rows = fetch_all("SELECT idx, similarity FROM cosine ORDER BY similarity DESC")
+    return [{"idx": idx, "similarity": similarity} for idx, similarity in rows]
