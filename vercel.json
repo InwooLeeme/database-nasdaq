@@ -1,12 +1,23 @@
 {
-  "buildCommand": "cd front && npm install && npm run build",
-  "outputDirectory": "front/build",
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "back/**"
-    }
+  "version": 2,
+  "build": {
+    "env": { "CI": "false" }
   },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
+  "builds": [
+    {
+      "src": "front/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": { "includeFiles": "back/**" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/index.py" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
