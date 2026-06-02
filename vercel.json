@@ -1,6 +1,4 @@
 {
-  "buildCommand": "cd front && npm install && npm run build",
-  "outputDirectory": "front/build",
   "functions": {
     "api/index.py": {
       "runtime": "@vercel/python@6.44.0",
