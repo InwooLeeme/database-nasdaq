@@ -36,6 +36,7 @@ const Chart = () => {
   console.log(chartdata);
   useEffect(()=>{
     getChartdata();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
   return (
     <div>
