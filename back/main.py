@@ -8,16 +8,19 @@ from db import get_connection
 app = FastAPI()
 
 # CORS 설정
-# 환경변수 FRONTEND_ORIGINS(쉼표 구분)로 허용 도메인 지정. 기본값은 로컬 개발 주소.
+# 환경변수 FRONTEND_ORIGINS(쉼표 구분)가 있으면 해당 도메인만 허용,
+# 없으면 모든 출처 허용(공개 읽기전용 API). 후자는 인증정보를 쓰지 않으므로
+# allow_credentials 를 끈다(스펙상 "*" 와 credentials 동시 사용 불가).
 allowed_origins = [
     origin.strip()
-    for origin in os.getenv("FRONTEND_ORIGINS", "http://localhost:3000").split(",")
+    for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
     if origin.strip()
 ]
+allow_all = not allowed_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"] if allow_all else allowed_origins,
+    allow_credentials=not allow_all,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
