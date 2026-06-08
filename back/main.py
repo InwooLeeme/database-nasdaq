@@ -1,11 +1,20 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 import os
 import sqlite3
 
 from db import get_connection
 
 app = FastAPI()
+
+# 응답 gzip 압축
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# 정적(읽기전용) 데이터이므로 CDN(엣지)에 장기 캐시.
+# s-maxage: 엣지 캐시 1년(새 배포 시 Vercel이 자동 무효화).
+# max-age: 브라우저 캐시 5분. stale-while-revalidate: 만료 후에도 갱신 동안 stale 제공.
+CACHE_CONTROL = "public, max-age=300, s-maxage=31536000, stale-while-revalidate=86400"
 
 # CORS 설정
 # 환경변수 FRONTEND_ORIGINS(쉼표 구분)가 있으면 해당 도메인만 허용,
@@ -52,12 +61,14 @@ def fetch_all(sql):
 
 
 @app.get("/nasdaq_chart")
-async def get_nasdaq_chart():
+async def get_nasdaq_chart(response: Response):
+    response.headers["Cache-Control"] = CACHE_CONTROL
     rows = fetch_all("SELECT * FROM stocks ORDER BY date DESC")
     return [dict(zip(STOCKS_COLUMNS, row)) for row in rows]
 
 
 @app.get("/cosine_similarity")
-async def get_cosine_similarity():
+async def get_cosine_similarity(response: Response):
+    response.headers["Cache-Control"] = CACHE_CONTROL
     rows = fetch_all("SELECT idx, similarity FROM cosine ORDER BY similarity DESC")
     return [{"idx": idx, "similarity": similarity} for idx, similarity in rows]
