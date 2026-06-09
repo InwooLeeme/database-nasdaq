@@ -1,15 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
-import { createChart, CandlestickSeries } from "lightweight-charts";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+import {
+  createChart,
+  CandlestickSeries,
+  createSeriesMarkers,
+} from "lightweight-charts";
+import { API_URL } from "../api";
 
 // "15,605.48" -> 15605.48
 const toNumber = (value) => Number(String(value).split(",").join(""));
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-const Chart = () => {
+const Chart = ({ highlights = [] }) => {
   const containerRef = useRef(null);
+  const seriesRef = useRef(null);
+  const markersRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,6 +68,8 @@ const Chart = () => {
         wickDownColor: "#ef5350",
       });
       series.setData(data);
+      seriesRef.current = series;
+      markersRef.current = createSeriesMarkers(series, []);
       chart.timeScale().fitContent();
       setLoading(false);
     };
@@ -71,9 +78,26 @@ const Chart = () => {
 
     return () => {
       disposed = true;
+      seriesRef.current = null;
+      markersRef.current = null;
       if (chart) chart.remove();
     };
   }, []);
+
+  // 유사 구간을 메인 차트 위에 마커로 표시한다.
+  useEffect(() => {
+    if (!markersRef.current) return;
+    const markers = (highlights || [])
+      .map((h) => ({
+        time: h.start,
+        position: "aboveBar",
+        color: "#facc15",
+        shape: "arrowDown",
+        text: "유사",
+      }))
+      .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
+    markersRef.current.setMarkers(markers);
+  }, [highlights]);
 
   return (
     <div>

@@ -2,9 +2,13 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import os
+import re
 import sqlite3
 
 from db import get_connection
+from analysis import find_similar
+
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 app = FastAPI()
 
@@ -72,3 +76,34 @@ async def get_cosine_similarity(response: Response):
     response.headers["Cache-Control"] = CACHE_CONTROL
     rows = fetch_all("SELECT idx, similarity FROM cosine ORDER BY similarity DESC")
     return [{"idx": idx, "similarity": similarity} for idx, similarity in rows]
+
+
+@app.get("/similar_patterns")
+async def get_similar_patterns(
+    response: Response,
+    start: str,
+    end: str,
+    metric: str = "cosine",
+    top: int = 5,
+):
+    """기준 구간 [start, end]와 유사한 과거 구간을 찾아 반환한다."""
+    if not DATE_RE.match(start) or not DATE_RE.match(end):
+        raise HTTPException(status_code=400, detail="날짜 형식은 YYYY-MM-DD 여야 합니다")
+    if start > end:
+        raise HTTPException(status_code=400, detail="start 는 end 보다 앞서야 합니다")
+    if metric not in ("cosine", "pearson"):
+        raise HTTPException(status_code=400, detail="metric 은 cosine 또는 pearson 이어야 합니다")
+
+    try:
+        result = find_similar(start, end, metric=metric, top=max(1, min(top, 20)))
+    except sqlite3.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    if result is None:
+        raise HTTPException(
+            status_code=400,
+            detail="기준 구간이 너무 짧거나 데이터 범위를 벗어났습니다 (최소 2거래일 필요)",
+        )
+
+    response.headers["Cache-Control"] = CACHE_CONTROL
+    return result
