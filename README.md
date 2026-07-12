@@ -9,8 +9,7 @@
 
 ## 화면
 
-![나스닥 패턴 분석 화면](docs/demo.png)
-![코사인 유사도 분석 화면](docs/cosine-similarity.png)
+![나스닥 패턴 분석 화면](https://inwooleeme.github.io/assets/projects/database-nasdaq-page.png)
 
 ## 주요 기능
 
@@ -18,17 +17,19 @@
 - **유사 패턴 분석** — 기준 구간(시작일·종료일)과 유사도 지표(코사인/피어슨)를 고르면,
   그 구간과 가장 비슷하게 움직였던 과거 구간을 찾아
   메인 차트에 마커로 표시하고, 두 구간을 정규화해 겹친 비교 차트로 "그 뒤 흐름"까지 보여줍니다.
+  (기준 구간 날짜는 데이터가 있는 범위로만 선택할 수 있습니다.)
 
 ## 기술 스택
 
 - **프론트엔드** — React, lightweight-charts
 - **백엔드** — FastAPI, SQLite, numpy
+- **테스트** — pytest
 - **배포** — Vercel
 
 ## 구성
 
 - `front/` — 캔들차트와 유사 패턴 분석 UI
-- `back/` — API(`main.py`), 유사도 계산(`analysis.py`), 데이터 적재·분석 스크립트
+- `back/` — API(`main.py`), 유사도 계산(`analysis.py`), 데이터 적재(`database.py`), 테스트(`test_analysis.py`)
 - `api/` — Vercel 서버리스 배포용 백엔드 진입점
 
 프론트와 백엔드는 각각 별도의 Vercel 프로젝트로 배포합니다.
@@ -47,6 +48,12 @@ CSV에서 데이터베이스를 다시 만들고 싶다면:
 
 ```bash
 python database.py     # CSV → chart.db 의 stocks 테이블 적재
+```
+
+테스트:
+
+```bash
+pytest                 # analysis.py 유사도 로직 검증
 ```
 
 ### 프론트엔드
@@ -110,6 +117,7 @@ JS 번들(gzip)도 183KB에서 99KB로 줄어 첫 로딩까지 빨라졌습니�
 | API 응답 시간 | 압축 + 엣지 캐싱 | 약 2초 → 0.15~0.49초 |
 | 차트 렌더 | ApexCharts → lightweight-charts | 11,125개 캔들도 부드럽게 |
 | JS 번들 | apexcharts 제거 | gzip 183KB → 99KB |
+| DB 조회 | 워커 프로세스 내 결과 캐싱(`lru_cache`) | 반복 요청 시 SQLite 재조회 제거 |
 
 크기와 시간은 `curl`로, 번들 크기는 CRA 빌드 출력으로 쟀습니다. 직접 확인해보려면 아래의 명령어로 확인하면 됩니다.
 
@@ -130,7 +138,8 @@ curl -s -D - -o /dev/null \
 ## 데이터
 
 나스닥 종합지수 일봉(1980~2024년) CSV를 `back/`에 두고, `database.py`로
-SQLite(`chart.db`)의 `stocks` 테이블에 적재해 사용합니다.
+SQLite(`chart.db`)의 `stocks` 테이블에 적재해 사용합니다. 날짜 공백, 숫자에 섞인 콤마·단위(M/B)·%
+기호 등은 적재 시점에 한 번만 정제해 저장하므로, 프론트·백엔드 코드에는 별도 방어 로직이 없습니다.
 
 | 컬럼 | 의미 |
 |------|------|
