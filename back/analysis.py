@@ -2,6 +2,8 @@
 
 사용자가 고른 기준 구간과 가장 비슷하게 움직였던 과거 구간을 찾는다.
 """
+from functools import lru_cache
+
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
@@ -10,8 +12,13 @@ from db import get_connection
 NEXT_DATE = 5  # 유사 패턴 이후 함께 보여줄 일수
 
 
+@lru_cache(maxsize=1)
 def load_closes():
-    """stocks 테이블에서 (날짜 리스트, 종가 ndarray)를 날짜 오름차순으로 반환."""
+    """stocks 테이블에서 (날짜 리스트, 종가 ndarray)를 날짜 오름차순으로 반환.
+
+    종가 데이터는 요청 중에 바뀌지 않으므로(읽기전용 DB) 워커 프로세스 내에서
+    한 번만 로드해 재사용한다.
+    """
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT date, stock_closing_price FROM stocks ORDER BY date ASC"
