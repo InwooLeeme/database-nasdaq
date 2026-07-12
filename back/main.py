@@ -56,7 +56,7 @@ STOCKS_COLUMNS = [
 def fetch_all(sql):
     """주어진 SELECT 문을 실행해 모든 행을 반환한다(워커 프로세스 내 캐시).
 
-    stocks/cosine 테이블은 읽기전용이라 동일 쿼리를 반복 실행할 필요가 없다.
+    stocks 테이블은 읽기전용이라 동일 쿼리를 반복 실행할 필요가 없다.
     결과가 비어 있으면 404.
     """
     try:
@@ -75,13 +75,6 @@ async def get_nasdaq_chart(response: Response):
     response.headers["Cache-Control"] = CACHE_CONTROL
     rows = fetch_all("SELECT * FROM stocks ORDER BY date DESC")
     return [dict(zip(STOCKS_COLUMNS, row)) for row in rows]
-
-
-@app.get("/cosine_similarity")
-async def get_cosine_similarity(response: Response):
-    response.headers["Cache-Control"] = CACHE_CONTROL
-    rows = fetch_all("SELECT idx, similarity FROM cosine ORDER BY similarity DESC")
-    return [{"idx": idx, "similarity": similarity} for idx, similarity in rows]
 
 
 @app.get("/similar_patterns")

@@ -47,7 +47,6 @@ CSV에서 데이터베이스를 다시 만들고 싶다면:
 
 ```bash
 python database.py     # CSV → chart.db 의 stocks 테이블 적재
-python cosine.py       # 코사인 유사도 계산 후 저장
 ```
 
 ### 프론트엔드
@@ -65,7 +64,6 @@ npm start              # http://localhost:3000
 - `GET /nasdaq_chart` — 일봉 OHLC 데이터
 - `GET /similar_patterns?start=&end=&metric=&top=` — 기준 구간과 유사한 과거 구간을 즉석에서 계산
   (`start`·`end`는 `YYYY-MM-DD`, `metric`은 `cosine`/`pearson`, `top`은 개수)
-- `GET /cosine_similarity` — 미리 계산해 둔 유사 구간 목록(초기 버전)
 
 배포 환경에서는 `/api` 접두사가 붙습니다 (예: `/api/nasdaq_chart`).
 
