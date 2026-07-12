@@ -16,8 +16,8 @@ def load_closes():
         rows = conn.execute(
             "SELECT date, stock_closing_price FROM stocks ORDER BY date ASC"
         ).fetchall()
-    dates = [str(r[0]).replace(" ", "") for r in rows]
-    closes = np.array([float(str(r[1]).replace(",", "")) for r in rows], dtype=float)
+    dates = [r[0] for r in rows]
+    closes = np.array([r[1] for r in rows], dtype=float)
     return dates, closes
 
 
