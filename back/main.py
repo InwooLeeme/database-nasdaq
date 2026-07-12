@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from functools import lru_cache
 import os
 import re
 import sqlite3
@@ -51,8 +52,13 @@ STOCKS_COLUMNS = [
 ]
 
 
+@lru_cache(maxsize=8)
 def fetch_all(sql):
-    """주어진 SELECT 문을 실행해 모든 행을 반환한다. 결과가 비어 있으면 404."""
+    """주어진 SELECT 문을 실행해 모든 행을 반환한다(워커 프로세스 내 캐시).
+
+    stocks/cosine 테이블은 읽기전용이라 동일 쿼리를 반복 실행할 필요가 없다.
+    결과가 비어 있으면 404.
+    """
     try:
         with get_connection() as conn:
             rows = conn.execute(sql).fetchall()
