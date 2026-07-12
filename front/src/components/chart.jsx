@@ -50,14 +50,14 @@ const Chart = ({ highlights = [] }) => {
         autoSize: true,
         layout: {
           background: { color: "transparent" },
-          textColor: "#d1d4dc",
+          textColor: "#8b93a7",
         },
         grid: {
-          vertLines: { color: "rgba(255, 255, 255, 0.06)" },
-          horzLines: { color: "rgba(255, 255, 255, 0.06)" },
+          vertLines: { color: "rgba(255, 255, 255, 0.08)" },
+          horzLines: { color: "rgba(255, 255, 255, 0.08)" },
         },
-        rightPriceScale: { borderColor: "rgba(255, 255, 255, 0.2)" },
-        timeScale: { borderColor: "rgba(255, 255, 255, 0.2)" },
+        rightPriceScale: { borderColor: "rgba(255, 255, 255, 0.15)" },
+        timeScale: { borderColor: "rgba(255, 255, 255, 0.15)" },
       });
 
       const series = chart.addSeries(CandlestickSeries, {
@@ -91,7 +91,7 @@ const Chart = ({ highlights = [] }) => {
       .map((h) => ({
         time: h.start,
         position: "aboveBar",
-        color: "#facc15",
+        color: "#f5a524",
         shape: "arrowDown",
         text: "유사",
       }))
@@ -100,8 +100,13 @@ const Chart = ({ highlights = [] }) => {
   }, [highlights]);
 
   return (
-    <div>
-      {loading && <h1>로딩중...</h1>}
+    <div className="chart-container">
+      {loading && (
+        <div className="chart-loading">
+          <span className="spinner spinner-accent" />
+          <span>차트 불러오는 중</span>
+        </div>
+      )}
       <div ref={containerRef} style={{ width: "100%", height: 500 }} />
     </div>
   );

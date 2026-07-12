@@ -11,12 +11,12 @@ const ComparisonChart = ({ base, match }) => {
 
     const chart = createChart(el, {
       autoSize: true,
-      layout: { background: { color: "transparent" }, textColor: "#d1d4dc" },
+      layout: { background: { color: "transparent" }, textColor: "#8b93a7" },
       grid: {
-        vertLines: { color: "rgba(255, 255, 255, 0.06)" },
-        horzLines: { color: "rgba(255, 255, 255, 0.06)" },
+        vertLines: { color: "rgba(255, 255, 255, 0.08)" },
+        horzLines: { color: "rgba(255, 255, 255, 0.08)" },
       },
-      rightPriceScale: { borderColor: "rgba(255, 255, 255, 0.2)" },
+      rightPriceScale: { borderColor: "rgba(255, 255, 255, 0.15)" },
       timeScale: { visible: false }, // x축은 인덱스(거래일 경과)라 날짜 라벨을 숨긴다
     });
 
@@ -31,7 +31,7 @@ const ComparisonChart = ({ base, match }) => {
       lastValueVisible: false,
     });
     const matchLine = chart.addSeries(LineSeries, {
-      color: "#f97316",
+      color: "#f5a524",
       lineWidth: 2,
       priceLineVisible: false,
       lastValueVisible: false,

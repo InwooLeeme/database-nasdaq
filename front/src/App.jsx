@@ -39,64 +39,123 @@ function App() {
 
   return (
     <div className="App">
-      <h1 className="title">나스닥 패턴 분석</h1>
+      <header className="appbar">
+        <div className="brand">
+          <span className="brand-mark">◆</span>
+          <div>
+            <div className="brand-name">NASDAQ PATTERN</div>
+            <div className="brand-tagline">과거 패턴 유사도 분석</div>
+          </div>
+        </div>
+        <span className="appbar-meta">1980 – 2024 · 일봉</span>
+      </header>
 
-      <div className="controls">
-        <label>
-          기준 시작일
-          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-        </label>
-        <label>
-          기준 종료일
-          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-        </label>
-        <label>
-          지표
-          <select value={metric} onChange={(e) => setMetric(e.target.value)}>
-            <option value="cosine">코사인</option>
-            <option value="pearson">피어슨</option>
-          </select>
-        </label>
-        <button onClick={analyze} disabled={loading}>
-          {loading ? "분석 중..." : "유사 구간 찾기"}
+      <section className="panel controls-panel">
+        <div className="field-group">
+          <label className="field">
+            <span className="field-label">기준 시작일</span>
+            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          </label>
+          <label className="field">
+            <span className="field-label">기준 종료일</span>
+            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </label>
+          <div className="field">
+            <span className="field-label">유사도 지표</span>
+            <div className="segmented" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={metric === "cosine"}
+                onClick={() => setMetric("cosine")}
+              >
+                코사인
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={metric === "pearson"}
+                onClick={() => setMetric("pearson")}
+              >
+                피어슨
+              </button>
+            </div>
+          </div>
+        </div>
+        <button className="btn-primary" onClick={analyze} disabled={loading}>
+          {loading && <span className="spinner" />}
+          {loading ? "분석 중" : "유사 구간 찾기"}
         </button>
-      </div>
+      </section>
 
-      {error && <p className="error">⚠ {error}</p>}
+      {error && <div className="banner banner-error">⚠ {error}</div>}
 
-      <div className="chart">
+      <section className="panel chart-panel">
+        <div className="panel-header">
+          <h2 className="panel-title">나스닥 종합지수</h2>
+          <div className="legend-inline">
+            <span><span className="legend-dot up"></span>상승</span>
+            <span><span className="legend-dot down"></span>하락</span>
+          </div>
+        </div>
         <Chart highlights={highlights} />
-      </div>
+      </section>
 
       {result && result.matches.length > 0 && (
-        <div className="result">
-          <div className="matchList">
-            <h3>유사 구간 (상위 {result.matches.length})</h3>
-            <ul>
+        <section className="results-grid">
+          <div className="panel match-panel">
+            <h3 className="panel-title">
+              유사 구간
+              <span className="panel-title-count">TOP {result.matches.length}</span>
+            </h3>
+            <ul className="match-list">
               {result.matches.map((m, i) => (
                 <li
                   key={m.start}
-                  className={i === selected ? "active" : ""}
+                  role="button"
+                  tabIndex={0}
+                  className={[i === selected ? "active" : "", i === 0 ? "is-best" : ""]
+                    .filter(Boolean)
+                    .join(" ")}
                   onClick={() => setSelected(i)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") setSelected(i);
+                  }}
                 >
-                  <span>{m.start} ~ {m.end}</span>
-                  <span className="sim">{(m.similarity * 100).toFixed(1)}%</span>
+                  <span className="match-rank">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="match-info">
+                    <span className="match-range">{m.start} ~ {m.end}</span>
+                    <span className="match-bar-track">
+                      <span
+                        className="match-bar-fill"
+                        style={{ width: `${Math.max(0, Math.min(100, m.similarity * 100))}%` }}
+                      />
+                    </span>
+                  </span>
+                  <span className="match-sim">{(m.similarity * 100).toFixed(1)}%</span>
                 </li>
               ))}
             </ul>
           </div>
-          <div className="comparison">
-            <h3>
-              기준({result.base.start}~{result.base.end}) vs{" "}
-              {result.matches[selected].start}~{result.matches[selected].end}
-            </h3>
+          <div className="panel compare-panel">
+            <div className="panel-header">
+              <h3 className="panel-title">구간 비교</h3>
+              <p className="compare-range">
+                {result.base.start}~{result.base.end} vs{" "}
+                {result.matches[selected].start}~{result.matches[selected].end}
+              </p>
+            </div>
             <ComparisonChart base={result.base} match={result.matches[selected]} />
             <p className="legend">
               <span className="dot base"></span> 기준 구간
               <span className="dot match"></span> 유사 구간(+이후 {result.nextDays}일)
             </p>
           </div>
-        </div>
+        </section>
+      )}
+
+      {!result && !loading && !error && (
+        <p className="hint">구간을 선택하고 유사 구간 찾기를 눌러보세요</p>
       )}
     </div>
   );
