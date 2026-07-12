@@ -4,6 +4,10 @@ import Chart from "./components/chart";
 import ComparisonChart from "./components/ComparisonChart";
 import { API_URL } from "./api";
 
+// 데이터셋이 보유한 실제 날짜 범위 (back/chart.db 의 stocks.date 기준).
+const DATA_MIN_DATE = "1980-03-18";
+const DATA_MAX_DATE = "2024-05-01";
+
 function App() {
   const [start, setStart] = useState("2018-02-01");
   const [end, setEnd] = useState("2018-02-20");
@@ -54,11 +58,23 @@ function App() {
         <div className="field-group">
           <label className="field">
             <span className="field-label">기준 시작일</span>
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+            <input
+              type="date"
+              value={start}
+              min={DATA_MIN_DATE}
+              max={DATA_MAX_DATE}
+              onChange={(e) => setStart(e.target.value)}
+            />
           </label>
           <label className="field">
             <span className="field-label">기준 종료일</span>
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+            <input
+              type="date"
+              value={end}
+              min={DATA_MIN_DATE}
+              max={DATA_MAX_DATE}
+              onChange={(e) => setEnd(e.target.value)}
+            />
           </label>
           <div className="field">
             <span className="field-label">유사도 지표</span>
