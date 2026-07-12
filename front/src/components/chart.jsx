@@ -6,11 +6,6 @@ import {
 } from "lightweight-charts";
 import { API_URL } from "../api";
 
-// "15,605.48" -> 15605.48
-const toNumber = (value) => Number(String(value).split(",").join(""));
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
 const Chart = ({ highlights = [] }) => {
   const containerRef = useRef(null);
   const seriesRef = useRef(null);
@@ -27,24 +22,18 @@ const Chart = ({ highlights = [] }) => {
       const json = await res.json();
       if (disposed || !chartElement) return;
 
-      // lightweight-charts 는 시간 오름차순 + 중복 없는 데이터를 요구한다.
-      // API 는 날짜 내림차순으로 주므로 정렬하고, 날짜 문자열의 공백("2024- 05- 01")을 제거한다.
-      const seen = new Set();
+      // lightweight-charts 는 시간 오름차순 데이터를 요구한다.
+      // API 는 날짜 내림차순으로 주므로 뒤집기만 하면 된다.
       const data = json
+        .slice()
+        .reverse()
         .map((item) => ({
-          time: item.date.replace(/\s/g, ""),
-          open: toNumber(item.stock_market_price),
-          high: toNumber(item.stock_high_price),
-          low: toNumber(item.stock_low_price),
-          close: toNumber(item.stock_closing_price),
-        }))
-        .filter((d) => {
-          if (!DATE_RE.test(d.time) || seen.has(d.time)) return false;
-          if (![d.open, d.high, d.low, d.close].every(Number.isFinite)) return false;
-          seen.add(d.time);
-          return true;
-        })
-        .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
+          time: item.date,
+          open: item.stock_market_price,
+          high: item.stock_high_price,
+          low: item.stock_low_price,
+          close: item.stock_closing_price,
+        }));
 
       chart = createChart(chartElement, {
         autoSize: true,
