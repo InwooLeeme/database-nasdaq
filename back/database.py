@@ -7,6 +7,11 @@ from db import get_connection
 
 BACK_DIR = os.path.dirname(os.path.abspath(__file__))
 TABLE_NAME = "stocks"
+STOOQ_FILE = "nasdaq_composite_stooq.csv"
+# investing.com 데이터(파일명은 ~2024_05_02 까지지만 실제로는 2024-05-01 까지)의
+# 다음날부터 Stooq로 보강한다. Stooq는 1984년 이전 구간은 시가/고가/저가를 종가로
+# 채운 값이라(진짜 OHLC 아님) 그 구간은 계속 investing.com CSV를 사용한다.
+STOOQ_MIN_DATE = "2024-05-02"
 COLUMN_RENAME = {
     "날짜": "date",
     "종가": "stock_closing_price",
@@ -15,6 +20,14 @@ COLUMN_RENAME = {
     "저가": "stock_low_price",
     "거래량": "volume",
     "변동 %": "change",
+}
+STOOQ_COLUMN_RENAME = {
+    "Date": "date",
+    "Close": "stock_closing_price",
+    "Open": "stock_market_price",
+    "High": "stock_high_price",
+    "Low": "stock_low_price",
+    "Volume": "volume",
 }
 PRICE_COLUMNS = [
     "stock_closing_price",
@@ -35,6 +48,15 @@ def load_csv_data(directory):
     if not frames:
         raise ValueError("CSV 파일에 데이터가 없습니다.")
     return pd.concat(frames, ignore_index=True).rename(columns=COLUMN_RENAME)
+
+
+def load_stooq_data(directory):
+    """Stooq CSV(STOOQ_MIN_DATE 이후 행만)를 읽어 기존 스키마로 컬럼명을 맞춘다.
+
+    Stooq 값은 이미 콤마 없는 순수 숫자/거래량이라 clean_data 를 거칠 필요가 없다.
+    """
+    df = pd.read_csv(os.path.join(directory, STOOQ_FILE)).rename(columns=STOOQ_COLUMN_RENAME)
+    return df[df["date"] >= STOOQ_MIN_DATE]
 
 
 def _parse_price(value):
@@ -78,12 +100,23 @@ def clean_data(df):
 
 
 def build_database():
+    """investing.com CSV(~2024-05-02) 와 Stooq CSV(2024-05-03~) 를 합쳐 적재한다.
+
+    Stooq 구간은 변동%(change) 이 없으므로 종가 기준 전일 대비 등락률로 채운다.
+    """
     csv_data = clean_data(load_csv_data(BACK_DIR))
+    stooq_data = load_stooq_data(BACK_DIR)
+    combined = pd.concat([csv_data, stooq_data], ignore_index=True).sort_values("date")
+    combined["change"] = combined["change"].fillna(
+        (combined["stock_closing_price"].pct_change() * 100).round(2)
+    )
+    combined = combined[list(COLUMN_RENAME.values())]
+
     with get_connection() as conn:
-        csv_data.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
+        combined.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
         conn.execute(f"CREATE UNIQUE INDEX idx_{TABLE_NAME}_date ON {TABLE_NAME}(date)")
         conn.commit()
-    print(f"'{TABLE_NAME}' 테이블에 {len(csv_data)}개 행을 적재했습니다.")
+    print(f"'{TABLE_NAME}' 테이블에 {len(combined)}개 행을 적재했습니다.")
 
 
 if __name__ == "__main__":
